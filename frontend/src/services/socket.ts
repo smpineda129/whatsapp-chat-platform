@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import type { Message, ConversationWithDetails } from '../types';
+import { config } from '../config/env';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = config.WS_URL;
 
 class SocketService {
     private socket: Socket | null = null;
