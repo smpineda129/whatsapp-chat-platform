@@ -1,0 +1,138 @@
+{
+    "name": "WhatsApp Bot Workflow",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "whatsapp-bot",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract conversation context\nconst data = $input.item.json;\n\nconst conversationHistory = data.conversationHistory || [];\nconst lastMessages = conversationHistory.slice(-5);\n\nconst context = {\n  contactPhone: data.contactPhone,\n  contactName: data.contactName || 'Cliente',\n  message: data.message,\n  conversationId: data.conversationId,\n  history: lastMessages.map(msg => `${msg.sender}: ${msg.message}`).join('\\n')\n};\n\nreturn { json: context };"
+            },
+            "id": "extract-context",
+            "name": "Extract Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-4",
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "=Eres un asistente virtual de WhatsApp para atención al cliente. Tu objetivo es ayudar a los clientes de manera amigable y profesional.\n\n**POLÍTICAS Y CONTEXTO:**\n\nNuestra empresa ofrece:\n- Servicio de mensajería empresarial\n- Integración con WhatsApp Cloud API\n- Soporte 24/7 para usuarios\n- Planes básicos y premium\n\n**REQUISITOS VENTAS BRILLA (MOTOS Y GENERAL):**\n\n1. **MOTOS (Titular):** Requiere validación Dactilar/Facial/Reto, Cobertura 4%, Foto Cédula, Factura Electrónica, Soporte Cuota Inicial, SOAT, Tarjeta Propiedad, Registro Fotográfico. NO requiere Pignoración ni Prenda.\n2. **MOTOS (No Titular con Codeudor):** Requiere Pignoración, Foto Cédula (Deudor+Codeudor), Formato Prenda. Cobertura 4%.\n3. **MOTOS (No Titular sin Codeudor):** Requiere Pignoración, Tasa Estándar (Cobertura 8%), Formato Prenda.\n4. **MOTOS (Tercero):** Proceso Tradicional (Cupo Manual), Proforma en vez de factura.\n\n5. **GENERAL (Titular):** Validación Reto/Dactilar/Facial. Cobertura 4%. Requiere Foto Cédula, Factura, Soporte Cuota Inicial.\n6. **GENERAL (No Titular sin Codeudor):** Tasa Estándar (8%). Requiere REGISTRO FOTOGRÁFICO COMPLETO (Interior, Exterior, Medidor, Nomenclatura, Cliente con producto).\n\n**HORARIOS:**\nLunes a Viernes: 9:00 AM - 6:00 PM\nFines de semana: Solo emergencias\n\n**INSTRUCCIONES:**\n1. Sé breve, claro y amigable\n2. Usa emojis moderadamente 😊\n3. Si no sabes algo, admítelo y ofrece transferir a un humano\n4. Si el cliente pide hablar con un humano, indica: [ESCALATE_TO_HUMAN]\n5. Siempre termina preguntando si hay algo más en que puedas ayudar\n\n**TEMAS QUE DEBES ESCALAR A HUMANO:**\n- Quejas o reclamos graves\n- Solicitudes de reembolso\n- Problemas técnicos complejos\n- Solicitudes de ventas empresariales\n- Si el cliente insiste en hablar con una persona"
+                        },
+                        {
+                            "role": "user",
+                            "content": "=**Conversación previa:**\n{{ $json.history }}\n\n**Nuevo mensaje del cliente:**\n{{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "temperature": 0.7,
+                    "maxTokens": 150
+                }
+            },
+            "id": "openai-gpt",
+            "name": "OpenAI GPT",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const response = $input.item.json.choices[0].message.content;\nconst needsHuman = response.includes('[ESCALATE_TO_HUMAN]');\n\n// Clean response\nconst cleanedResponse = response.replace('[ESCALATE_TO_HUMAN]', '').trim();\n\nreturn {\n  json: {\n    response: cleanedResponse || 'Lo siento, estoy teniendo dificultades. Déjame transferirte con un agente.',\n    needsHuman: needsHuman,\n    confidence: needsHuman ? 0.3 : 0.9\n  }\n};"
+            },
+            "id": "format-response",
+            "name": "Format Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}"
+            },
+            "id": "webhook-response",
+            "name": "Webhook Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Context": {
+            "main": [
+                [
+                    {
+                        "node": "OpenAI GPT",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI GPT": {
+            "main": [
+                [
+                    {
+                        "node": "Format Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Response": {
+            "main": [
+                [
+                    {
+                        "node": "Webhook Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "timezone": "America/Bogota"
+    }
+}

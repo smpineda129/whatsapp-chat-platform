@@ -1,0 +1,93 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: whatsapp-postgres
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./postgres/Dockerfile
+    dockerContext: ./postgres
+    envVars:
+      - key: POSTGRES_DB
+        value: whatsapp_db
+      - key: POSTGRES_USER
+        value: whatsapp_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    disk:
+      name: postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+  # n8n Workflow Automation
+  - type: web
+    name: whatsapp-n8n
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.n8n
+    dockerContext: .
+    envVars:
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: true
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      - key: N8N_BASIC_AUTH_PASSWORD
+        sync: false
+      - key: N8N_HOST
+        value: 0.0.0.0
+      - key: N8N_PORT
+        value: 5678
+      - key: N8N_PROTOCOL
+        value: https
+      - key: WEBHOOK_URL
+        sync: false
+    disk:
+      name: n8n-data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
+
+  # Backend API
+  - type: web
+    name: whatsapp-backend
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: whatsapp-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WHATSAPP_API_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+    healthCheckPath: /api/health
+
+  # Frontend
+  - type: web
+    name: whatsapp-frontend
+    env: static
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_WS_URL
+        sync: false

@@ -1,0 +1,76 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                  🚀 WEBHOOK DE WHATSAPP CONFIGURADO                       ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+✅ ESTADO: ACTIVO Y FUNCIONANDO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 INFORMACIÓN PARA CONFIGURAR EN META FOR DEVELOPERS:
+
+   🔗 Callback URL:
+   https://dwana-shoreless-bewitchingly.ngrok-free.dev/api/webhook/whatsapp
+
+   🔑 Verify Token:
+   whatsapp_verify_token_123
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 PASOS PARA CONFIGURAR EN META:
+
+1. Ve a: https://developers.facebook.com/apps
+
+2. Selecciona tu App de WhatsApp
+
+3. Ve a: WhatsApp > Configuration
+
+4. En la sección "Webhook", haz clic en "Edit"
+
+5. Pega la Callback URL y el Verify Token de arriba
+
+6. Haz clic en "Verify and Save"
+
+7. Suscríbete al evento "messages"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 MONITOREAR MENSAJES ENTRANTES:
+
+   En terminal, ejecuta:
+   docker-compose logs -f backend
+
+   Deberías ver:
+   📨 POST Webhook received from WhatsApp
+   ✅ Received WhatsApp message: ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌐 INTERFAZ DE NGROK (Ver peticiones en tiempo real):
+
+   http://127.0.0.1:4041
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANTE:
+
+   • Mantén ngrok corriendo (no cierres la terminal)
+   • Esta URL es temporal - si reinicias ngrok, cambiará
+   • Para URL permanente, necesitas desplegar en producción
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SERVICIOS ACTIVOS:
+
+   ✓ Backend:   http://localhost:3000
+   ✓ Frontend:  http://localhost:5173
+   ✓ n8n:       http://localhost:5678 (admin/admin123)
+   ✓ ngrok:     https://dwana-shoreless-bewitchingly.ngrok-free.dev
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 PRÓXIMO PASO:
+
+   Configura el webhook en Meta for Developers y envía un mensaje de prueba
+   desde WhatsApp al número configurado.
+
+╚═══════════════════════════════════════════════════════════════════════════╝
