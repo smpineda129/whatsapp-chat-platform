@@ -9,5 +9,5 @@ ENV N8N_PROTOCOL=https
 # Expose port
 EXPOSE 5678
 
-# Start n8n
-CMD ["n8n"]
+# The n8n image already has the correct entrypoint, no need to override
+# Just use the default command from the base image
