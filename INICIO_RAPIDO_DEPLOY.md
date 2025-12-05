@@ -25,7 +25,7 @@ git add .
 git commit -m "Preparar para despliegue en producción"
 
 # Crear repo en GitHub y conectar
-git remote add origin https://github.com/TU_USUARIO/whatsapp-chat-platform.git
+git remote add origin https://github.com/smpineda129/whatsapp-chat-platform
 git branch -M main
 git push -u origin main
 ```
