@@ -94,16 +94,25 @@ async function processWebhook(body: any): Promise<void> {
             mediaUrl = await whatsappService.getMediaUrl(message.document.id);
         }
 
-        // Save incoming message
-        await MessageModel.create({
-            conversation_id: conversation.id,
-            sender_type: 'contact',
-            sender_id: contact.id,
-            content: messageContent,
-            message_type: messageType,
-            media_url: mediaUrl,
-            whatsapp_message_id: message.id,
-        });
+        // Save incoming message (skip if duplicate)
+        try {
+            await MessageModel.create({
+                conversation_id: conversation.id,
+                sender_type: 'contact',
+                sender_id: contact.id,
+                content: messageContent,
+                message_type: messageType,
+                media_url: mediaUrl,
+                whatsapp_message_id: message.id,
+            });
+        } catch (error: any) {
+            // If duplicate message (Meta retry), skip processing
+            if (error.code === '23505' && error.constraint === 'messages_whatsapp_message_id_key') {
+                console.log('⚠️ Duplicate message detected, skipping:', message.id);
+                return;
+            }
+            throw error;
+        }
 
         // Check if we should escalate to human
         const needsEscalation = await n8nService.checkEscalationKeywords(messageContent);
