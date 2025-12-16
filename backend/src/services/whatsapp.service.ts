@@ -1,4 +1,5 @@
 import axios from 'axios';
+import crypto from 'crypto';
 import { env } from '../config/env';
 
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
@@ -41,15 +42,37 @@ export class WhatsAppService {
     private apiUrl: string;
     private phoneNumberId: string;
     private accessToken: string;
+    private appSecret: string;
 
     constructor() {
         this.apiUrl = WHATSAPP_API_URL;
         this.phoneNumberId = env.whatsappPhoneNumberId;
         this.accessToken = env.whatsappApiToken;
+        this.appSecret = env.facebookAppSecret;
+    }
+
+    private generateAppSecretProof(): string {
+        if (!this.appSecret || !this.accessToken) {
+            return '';
+        }
+        return crypto
+            .createHmac('sha256', this.appSecret)
+            .update(this.accessToken)
+            .digest('hex');
     }
 
     async sendTextMessage(params: SendMessageParams): Promise<string> {
         try {
+            const appsecretProof = this.generateAppSecretProof();
+            const headers: any = {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+            };
+            
+            if (appsecretProof) {
+                headers['appsecret_proof'] = appsecretProof;
+            }
+
             const response = await axios.post(
                 `${this.apiUrl}/${this.phoneNumberId}/messages`,
                 {
@@ -62,12 +85,7 @@ export class WhatsAppService {
                         body: params.message,
                     },
                 },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
+                { headers }
             );
 
             return response.data.messages[0].id;
@@ -79,6 +97,16 @@ export class WhatsAppService {
 
     async sendMediaMessage(params: SendMediaParams): Promise<string> {
         try {
+            const appsecretProof = this.generateAppSecretProof();
+            const headers: any = {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+            };
+            
+            if (appsecretProof) {
+                headers['appsecret_proof'] = appsecretProof;
+            }
+
             const mediaObject: any = {
                 link: params.mediaUrl,
             };
@@ -96,12 +124,7 @@ export class WhatsAppService {
                     type: params.mediaType,
                     [params.mediaType]: mediaObject,
                 },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
+                { headers }
             );
 
             return response.data.messages[0].id;
@@ -113,6 +136,16 @@ export class WhatsAppService {
 
     async markAsRead(messageId: string): Promise<void> {
         try {
+            const appsecretProof = this.generateAppSecretProof();
+            const headers: any = {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+            };
+            
+            if (appsecretProof) {
+                headers['appsecret_proof'] = appsecretProof;
+            }
+
             await axios.post(
                 `${this.apiUrl}/${this.phoneNumberId}/messages`,
                 {
@@ -120,12 +153,7 @@ export class WhatsAppService {
                     status: 'read',
                     message_id: messageId,
                 },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
+                { headers }
             );
         } catch (error: any) {
             console.error('WhatsApp mark as read error:', error.response?.data || error.message);
@@ -134,10 +162,17 @@ export class WhatsAppService {
 
     async getMediaUrl(mediaId: string): Promise<string> {
         try {
+            const appsecretProof = this.generateAppSecretProof();
+            const headers: any = {
+                'Authorization': `Bearer ${this.accessToken}`,
+            };
+            
+            if (appsecretProof) {
+                headers['appsecret_proof'] = appsecretProof;
+            }
+
             const response = await axios.get(`${this.apiUrl}/${mediaId}`, {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                },
+                headers,
             });
 
             return response.data.url;
