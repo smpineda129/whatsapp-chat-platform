@@ -144,4 +144,26 @@ router.post('/:id/transfer-to-bot', authenticate, async (req: AuthRequest, res: 
     }
 });
 
+// Close/End conversation manually
+router.post('/:id/close', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const conversationId = parseInt(req.params.id);
+
+        const conversation = await ConversationModel.closeConversation(conversationId);
+
+        if (!conversation) {
+            res.status(404).json({ error: 'Conversation not found' });
+            return;
+        }
+
+        res.json({
+            conversation,
+            message: 'Conversation closed successfully'
+        });
+    } catch (error) {
+        console.error('Close conversation error:', error);
+        res.status(500).json({ error: 'Failed to close conversation' });
+    }
+});
+
 export default router;

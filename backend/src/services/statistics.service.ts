@@ -12,6 +12,10 @@ export interface GlobalStatistics {
     averageConversationDurationMinutes: number;
     messagesLast24Hours: number;
     conversationsLast24Hours: number;
+    escalationRate: number;
+    botResolutionRate: number;
+    peakHours: Array<{ hour: number; messageCount: number }>;
+    conversationsByDay: Array<{ date: string; count: number }>;
 }
 
 export interface AgentStatistics {
@@ -75,26 +79,66 @@ export class StatisticsService {
       WHERE ended_at IS NOT NULL
     `;
 
-        const [conversationsResult, messagesResult, responseTimeResult, durationResult] =
+        const peakHoursQuery = `
+      SELECT 
+        EXTRACT(HOUR FROM created_at) as hour,
+        COUNT(*) as message_count
+      FROM messages
+      WHERE created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY EXTRACT(HOUR FROM created_at)
+      ORDER BY hour
+    `;
+
+        const conversationsByDayQuery = `
+      SELECT 
+        DATE(started_at) as date,
+        COUNT(*) as count
+      FROM conversations
+      WHERE started_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(started_at)
+      ORDER BY date DESC
+      LIMIT 30
+    `;
+
+        const [conversationsResult, messagesResult, responseTimeResult, durationResult, peakHoursResult, conversationsByDayResult] =
             await Promise.all([
                 db.query(conversationsQuery),
                 db.query(messagesQuery),
                 db.query(avgResponseTimeQuery),
                 db.query(avgDurationQuery),
+                db.query(peakHoursQuery),
+                db.query(conversationsByDayQuery),
             ]);
 
+        const totalConvs = parseInt(conversationsResult.rows[0].total_conversations) || 0;
+        const botConvs = parseInt(conversationsResult.rows[0].bot_conversations) || 0;
+        const humanConvs = parseInt(conversationsResult.rows[0].human_conversations) || 0;
+
+        const escalationRate = totalConvs > 0 ? (humanConvs / totalConvs) * 100 : 0;
+        const botResolutionRate = totalConvs > 0 ? (botConvs / totalConvs) * 100 : 0;
+
         return {
-            totalConversations: parseInt(conversationsResult.rows[0].total_conversations) || 0,
+            totalConversations: totalConvs,
             activeConversations: parseInt(conversationsResult.rows[0].active_conversations) || 0,
             closedConversations: parseInt(conversationsResult.rows[0].closed_conversations) || 0,
-            botConversations: parseInt(conversationsResult.rows[0].bot_conversations) || 0,
-            humanConversations: parseInt(conversationsResult.rows[0].human_conversations) || 0,
+            botConversations: botConvs,
+            humanConversations: humanConvs,
             conversationsLast24Hours:
                 parseInt(conversationsResult.rows[0].conversations_last_24_hours) || 0,
             totalMessages: parseInt(messagesResult.rows[0].total_messages) || 0,
             messagesLast24Hours: parseInt(messagesResult.rows[0].messages_last_24_hours) || 0,
             averageResponseTimeSeconds: parseFloat(responseTimeResult.rows[0]?.avg_response_time) || 0,
             averageConversationDurationMinutes: parseFloat(durationResult.rows[0]?.avg_duration) || 0,
+            escalationRate: Math.round(escalationRate * 100) / 100,
+            botResolutionRate: Math.round(botResolutionRate * 100) / 100,
+            peakHours: peakHoursResult.rows.map(row => ({
+                hour: parseInt(row.hour),
+                messageCount: parseInt(row.message_count),
+            })),
+            conversationsByDay: conversationsByDayResult.rows.map(row => ({
+                date: row.date,
+                count: parseInt(row.count),
+            })),
         };
     }
 

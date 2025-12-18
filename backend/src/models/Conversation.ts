@@ -66,10 +66,33 @@ export class ConversationModel {
 
     static async findOrCreate(contactId: number): Promise<Conversation> {
         const existing = await this.findActiveByContact(contactId);
+        
+        // Check if conversation exists and is still active (within 30 minutes)
         if (existing) {
+            const lastMessageTime = existing.last_message_at || existing.started_at;
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+            
+            // If last message was more than 30 minutes ago, close it and create new one
+            if (new Date(lastMessageTime) < thirtyMinutesAgo) {
+                await this.update(existing.id, {
+                    status: 'closed',
+                    ended_at: new Date(),
+                });
+                // Create new conversation
+                return this.create({ contact_id: contactId, chat_type: 'bot' });
+            }
+            
             return existing;
         }
+        
         return this.create({ contact_id: contactId, chat_type: 'bot' });
+    }
+
+    static async closeConversation(id: number): Promise<Conversation | null> {
+        return this.update(id, {
+            status: 'closed',
+            ended_at: new Date(),
+        });
     }
 
     static async update(

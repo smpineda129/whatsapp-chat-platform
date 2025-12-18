@@ -82,6 +82,9 @@ setupSocketHandlers(io);
 // Make io accessible to routes
 app.set('io', io);
 
+// Make io globally accessible for webhook routes
+(global as any).io = io;
+
 // Start server
 const startServer = async () => {
     try {

@@ -4,6 +4,7 @@ import { n8nService } from '../services/n8n.service';
 import { ContactModel } from '../models/Contact';
 import { ConversationModel } from '../models/Conversation';
 import { MessageModel } from '../models/Message';
+import { emitNewMessage } from '../sockets/chat.socket';
 
 const router = Router();
 
@@ -69,10 +70,21 @@ async function processWebhook(body: any): Promise<void> {
 
         console.log('✅ Received WhatsApp message:', message);
 
+        // Extract contact info from webhook
+        const contactInfo = whatsappService.parseContactInfo(body);
+        
         // Find or create contact
-        const contact = await ContactModel.findOrCreate({
+        let contact = await ContactModel.findOrCreate({
             phone_number: message.from,
+            name: contactInfo?.name || undefined,
         });
+
+        // Update contact name if it changed
+        if (contactInfo?.name && contact.name !== contactInfo.name) {
+            contact = await ContactModel.update(contact.id, {
+                name: contactInfo.name,
+            }) || contact;
+        }
 
         // Find or create active conversation
         const conversation = await ConversationModel.findOrCreate(contact.id);
@@ -95,8 +107,9 @@ async function processWebhook(body: any): Promise<void> {
         }
 
         // Save incoming message (skip if duplicate)
+        let incomingMessage;
         try {
-            await MessageModel.create({
+            incomingMessage = await MessageModel.create({
                 conversation_id: conversation.id,
                 sender_type: 'contact',
                 sender_id: contact.id,
@@ -105,6 +118,12 @@ async function processWebhook(body: any): Promise<void> {
                 media_url: mediaUrl,
                 whatsapp_message_id: message.id,
             });
+
+            // Emit new message via WebSocket for real-time updates
+            const io = (global as any).io;
+            if (io) {
+                emitNewMessage(io, incomingMessage);
+            }
         } catch (error: any) {
             // If duplicate message (Meta retry), skip processing
             if (error.code === '23505' && error.constraint === 'messages_whatsapp_message_id_key') {
@@ -134,6 +153,48 @@ async function processWebhook(body: any): Promise<void> {
 
         // Get conversation history for context
         const history = await MessageModel.findByConversation(conversation.id, 10);
+        
+        // Check if this is the first user message (only the current message exists)
+        const isFirstMessage = history.length === 1 && history[0].sender_type === 'contact';
+        
+        // If first message, send welcome menu instead of processing with GPT
+        if (isFirstMessage) {
+            const welcomeMessage = `¡Hola! 👋 Bienvenido al asistente virtual de *Brilla*.
+
+¿En qué puedo ayudarte hoy? Selecciona una opción:
+
+1️⃣ *Consultar cupo disponible*
+2️⃣ *Conocer productos y plazos*
+3️⃣ *Requisitos para solicitar crédito*
+4️⃣ *Estado de mi solicitud*
+5️⃣ *Hablar con un asesor*
+
+Por favor, responde con el número de la opción o describe tu consulta.`;
+
+            // Send welcome message
+            const whatsappMessageId = await whatsappService.sendTextMessage({
+                to: contact.phone_number,
+                message: welcomeMessage,
+            });
+
+            // Save welcome message
+            const welcomeMsg = await MessageModel.create({
+                conversation_id: conversation.id,
+                sender_type: 'bot',
+                content: welcomeMessage,
+                whatsapp_message_id: whatsappMessageId,
+            });
+
+            // Emit bot message via WebSocket
+            const io = (global as any).io;
+            if (io) {
+                emitNewMessage(io, welcomeMsg);
+            }
+
+            await whatsappService.markAsRead(message.id);
+            return;
+        }
+
         const conversationHistory = history.map(msg => ({
             sender: msg.sender_type,
             message: msg.content,
@@ -172,12 +233,18 @@ async function processWebhook(body: any): Promise<void> {
         });
 
         // Save bot response
-        await MessageModel.create({
+        const botMsg = await MessageModel.create({
             conversation_id: conversation.id,
             sender_type: 'bot',
             content: botResponse.response,
             whatsapp_message_id: whatsappMessageId,
         });
+
+        // Emit bot message via WebSocket
+        const io = (global as any).io;
+        if (io) {
+            emitNewMessage(io, botMsg);
+        }
 
         // Mark original message as read
         await whatsappService.markAsRead(message.id);

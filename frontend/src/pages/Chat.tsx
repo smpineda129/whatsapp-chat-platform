@@ -29,13 +29,40 @@ import {
     Person,
     Logout,
     Menu as MenuIcon,
+    BarChart as BarChartIcon,
+    Close as CloseIcon,
 } from '@mui/icons-material';
+import { Switch, FormControlLabel } from '@mui/material';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { socketService } from '../services/socket';
+import api from '../services/api';
 import { format } from 'date-fns';
 
 const DRAWER_WIDTH = 350;
+
+// Generate consistent color for avatar based on string
+const stringToColor = (string: string) => {
+    let hash = 0;
+    for (let i = 0; i < string.length; i++) {
+        hash = string.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = hash % 360;
+    return `hsl(${hue}, 65%, 50%)`;
+};
+
+// Get initials from name or phone
+const getInitials = (name: string | null, phone: string) => {
+    if (name) {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    }
+    return phone.slice(-2);
+};
 
 export const Chat: React.FC = () => {
     const navigate = useNavigate();
@@ -58,6 +85,8 @@ export const Chat: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [isSwitchingMode, setIsSwitchingMode] = useState(false);
+    const [isClosingChat, setIsClosingChat] = useState(false);
 
     useEffect(() => {
         fetchConversations();
@@ -106,6 +135,67 @@ export const Chat: React.FC = () => {
         navigate('/login');
     };
 
+    const handleToggleBotMode = async () => {
+        if (!selectedConversation) return;
+        
+        setIsSwitchingMode(true);
+        try {
+            const newMode = selectedConversation.chat_type === 'bot' ? 'human' : 'bot';
+            const endpoint = newMode === 'bot' 
+                ? `/conversations/${selectedConversation.id}/transfer-to-bot`
+                : `/conversations/${selectedConversation.id}/transfer`;
+            
+            const payload = newMode === 'human' ? { user_id: user?.id } : {};
+            
+            await api.post(endpoint, payload);
+            
+            // Update local state
+            const updatedConversation = {
+                ...selectedConversation,
+                chat_type: newMode,
+                assigned_to_user_id: newMode === 'human' ? user?.id : null,
+            };
+            
+            updateConversation(updatedConversation as any);
+            selectConversation(updatedConversation as any);
+        } catch (error) {
+            console.error('Failed to toggle bot mode:', error);
+            alert('Error al cambiar el modo. Intenta de nuevo.');
+        } finally {
+            setIsSwitchingMode(false);
+        }
+    };
+
+    const handleCloseConversation = async () => {
+        if (!selectedConversation) return;
+        
+        const confirmed = window.confirm('¿Estás seguro de que deseas finalizar este chat? El usuario podrá iniciar una nueva conversación si vuelve a escribir.');
+        if (!confirmed) return;
+        
+        setIsClosingChat(true);
+        try {
+            await api.post(`/conversations/${selectedConversation.id}/close`);
+            
+            // Update local state
+            const updatedConversation = {
+                ...selectedConversation,
+                status: 'closed' as const,
+                ended_at: new Date().toISOString(),
+            };
+            
+            updateConversation(updatedConversation as any);
+            selectConversation(null);
+            
+            // Refresh conversations list
+            await fetchConversations();
+        } catch (error) {
+            console.error('Failed to close conversation:', error);
+            alert('Error al finalizar el chat. Intenta de nuevo.');
+        } finally {
+            setIsClosingChat(false);
+        }
+    };
+
     const filteredConversations = conversations.filter((conv) =>
         conv.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         conv.contact_phone.includes(searchQuery)
@@ -138,34 +228,42 @@ export const Chat: React.FC = () => {
             </Box>
 
             <List sx={{ flex: 1, overflow: 'auto' }}>
-                {filteredConversations.map((conv) => (
-                    <ListItemButton
-                        key={conv.id}
-                        selected={selectedConversation?.id === conv.id}
-                        onClick={() => selectConversation(conv)}
-                    >
-                        <ListItemIcon>
-                            <Avatar>{conv.contact_name?.[0] || conv.contact_phone[0]}</Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {conv.contact_name || conv.contact_phone}
-                                    <Chip
-                                        size="small"
-                                        icon={conv.chat_type === 'bot' ? <SmartToy fontSize="small" /> : <Person fontSize="small" />}
-                                        label={conv.chat_type === 'bot' ? 'Bot' : 'Humano'}
-                                        color={conv.chat_type === 'bot' ? 'primary' : 'secondary'}
-                                    />
-                                </Box>
-                            }
-                            secondary={conv.last_message_content}
-                            secondaryTypographyProps={{
-                                noWrap: true,
-                            }}
-                        />
-                    </ListItemButton>
-                ))}
+                {filteredConversations.map((conv) => {
+                    const identifier = conv.contact_name || conv.contact_phone;
+                    const avatarColor = stringToColor(identifier);
+                    const initials = getInitials(conv.contact_name, conv.contact_phone);
+                    
+                    return (
+                        <ListItemButton
+                            key={conv.id}
+                            selected={selectedConversation?.id === conv.id}
+                            onClick={() => selectConversation(conv)}
+                        >
+                            <ListItemIcon>
+                                <Avatar sx={{ bgcolor: avatarColor }}>
+                                    {initials}
+                                </Avatar>
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        {conv.contact_name || conv.contact_phone}
+                                        <Chip
+                                            size="small"
+                                            icon={conv.chat_type === 'bot' ? <SmartToy fontSize="small" /> : <Person fontSize="small" />}
+                                            label={conv.chat_type === 'bot' ? 'Bot' : 'Humano'}
+                                            color={conv.chat_type === 'bot' ? 'primary' : 'secondary'}
+                                        />
+                                    </Box>
+                                }
+                                secondary={conv.last_message_content}
+                                secondaryTypographyProps={{
+                                    noWrap: true,
+                                }}
+                            />
+                        </ListItemButton>
+                    );
+                })}
             </List>
         </Box>
     );
@@ -188,8 +286,12 @@ export const Chat: React.FC = () => {
                         WhatsApp Platform
                     </Typography>
 
+                    <IconButton color="inherit" onClick={() => navigate('/statistics')} title="Estadísticas">
+                        <BarChartIcon />
+                    </IconButton>
+
                     {user?.role === 'admin' && (
-                        <IconButton color="inherit" onClick={() => navigate('/dashboard')}>
+                        <IconButton color="inherit" onClick={() => navigate('/dashboard')} title="Dashboard">
                             <DashboardIcon />
                         </IconButton>
                     )}
@@ -258,6 +360,57 @@ export const Chat: React.FC = () => {
 
                 {selectedConversation ? (
                     <>
+                        {/* Bot Mode Toggle */}
+                        <Paper
+                            elevation={1}
+                            sx={{
+                                p: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderBottom: '1px solid #e0e0e0',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle1" fontWeight="bold">
+                                    {selectedConversation.contact_name || selectedConversation.contact_phone}
+                                </Typography>
+                                <Chip
+                                    size="small"
+                                    icon={selectedConversation.chat_type === 'bot' ? <SmartToy fontSize="small" /> : <Person fontSize="small" />}
+                                    label={selectedConversation.chat_type === 'bot' ? 'Bot Activo' : 'Atención Humana'}
+                                    color={selectedConversation.chat_type === 'bot' ? 'primary' : 'secondary'}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={selectedConversation.chat_type === 'bot'}
+                                            onChange={handleToggleBotMode}
+                                            disabled={isSwitchingMode}
+                                            color="primary"
+                                        />
+                                    }
+                                    label={
+                                        <Typography variant="body2" color="textSecondary">
+                                            {selectedConversation.chat_type === 'bot' ? 'Desactivar Bot' : 'Activar Bot'}
+                                        </Typography>
+                                    }
+                                    labelPlacement="start"
+                                />
+                                <IconButton
+                                    color="error"
+                                    onClick={handleCloseConversation}
+                                    disabled={isClosingChat}
+                                    title="Finalizar Chat"
+                                    size="small"
+                                >
+                                    <CloseIcon />
+                                </IconButton>
+                            </Box>
+                        </Paper>
+
                         <Box
                             sx={{
                                 flex: 1,

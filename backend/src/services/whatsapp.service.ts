@@ -229,6 +229,64 @@ export class WhatsAppService {
             return null;
         }
     }
+
+    async getContactProfile(phoneNumber: string): Promise<{ name: string | null; profilePictureUrl: string | null }> {
+        try {
+            const appsecretProof = this.generateAppSecretProof();
+            const headers: any = {
+                'Authorization': `Bearer ${this.accessToken}`,
+            };
+            
+            if (appsecretProof) {
+                headers['appsecret_proof'] = appsecretProof;
+            }
+
+            // Get contact profile
+            const response = await axios.get(
+                `${this.apiUrl}/${this.phoneNumberId}/contacts`,
+                {
+                    headers,
+                    params: {
+                        wa_id: phoneNumber,
+                    },
+                }
+            );
+
+            const contact = response.data?.contacts?.[0];
+            
+            return {
+                name: contact?.profile?.name || null,
+                profilePictureUrl: null, // WhatsApp API doesn't provide profile pictures directly
+            };
+        } catch (error: any) {
+            console.error('WhatsApp get contact profile error:', error.response?.data || error.message);
+            // Return null values if profile fetch fails
+            return {
+                name: null,
+                profilePictureUrl: null,
+            };
+        }
+    }
+
+    parseContactInfo(body: any): { name: string | null } | null {
+        try {
+            const entry = body.entry?.[0];
+            const change = entry?.changes?.[0];
+            const value = change?.value;
+            const contact = value?.contacts?.[0];
+
+            if (!contact) {
+                return null;
+            }
+
+            return {
+                name: contact.profile?.name || null,
+            };
+        } catch (error) {
+            console.error('Error parsing contact info:', error);
+            return null;
+        }
+    }
 }
 
 export const whatsappService = new WhatsAppService();
