@@ -116,16 +116,16 @@ export const Statistics: React.FC = () => {
             ['Métrica', 'Valor'],
             ['Total Conversaciones', stats.totalConversations],
             ['Total Mensajes', stats.totalMessages],
-            ['Tiempo de Respuesta Promedio (min)', Math.round(stats.averageResponseTime / 60)],
-            ['Duración Promedio (min)', Math.round(stats.averageDuration / 60)],
+            ['Tiempo de Respuesta Promedio (min)', Math.round((stats.averageResponseTime || 0) / 60)],
+            ['Duración Promedio (min)', Math.round((stats.averageDuration || 0) / 60)],
             ['Conversaciones Últimas 24h', stats.conversationsLast24h],
             ['Mensajes Últimas 24h', stats.messagesLast24h],
             ['Conversaciones Bot', stats.botConversations],
             ['Conversaciones Humanas', stats.humanConversations],
             ['Conversaciones Activas', stats.activeConversations],
             ['Conversaciones Cerradas', stats.closedConversations],
-            ['Tasa de Escalamiento (%)', stats.escalationRate.toFixed(2)],
-            ['Tasa de Resolución Bot (%)', stats.botResolutionRate.toFixed(2)],
+            ['Tasa de Escalamiento (%)', (stats.escalationRate || 0).toFixed(2)],
+            ['Tasa de Resolución Bot (%)', (stats.botResolutionRate || 0).toFixed(2)],
         ];
 
         const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
@@ -133,7 +133,7 @@ export const Statistics: React.FC = () => {
 
         const peakHoursData = [
             ['Hora', 'Cantidad de Mensajes'],
-            ...stats.peakHours.map(item => [
+            ...(stats.peakHours || []).map(item => [
                 `${item.hour}:00`,
                 item.messageCount
             ])
@@ -143,7 +143,7 @@ export const Statistics: React.FC = () => {
 
         const conversationsByDayData = [
             ['Fecha', 'Conversaciones'],
-            ...stats.conversationsByDay.map(item => [
+            ...(stats.conversationsByDay || []).map(item => [
                 item.date,
                 item.count
             ])
@@ -161,16 +161,16 @@ export const Statistics: React.FC = () => {
             ['Métrica', 'Valor'],
             ['Total Conversaciones', stats.totalConversations],
             ['Total Mensajes', stats.totalMessages],
-            ['Tiempo de Respuesta Promedio (min)', Math.round(stats.averageResponseTime / 60)],
-            ['Duración Promedio (min)', Math.round(stats.averageDuration / 60)],
+            ['Tiempo de Respuesta Promedio (min)', Math.round((stats.averageResponseTime || 0) / 60)],
+            ['Duración Promedio (min)', Math.round((stats.averageDuration || 0) / 60)],
             ['Conversaciones Últimas 24h', stats.conversationsLast24h],
             ['Mensajes Últimas 24h', stats.messagesLast24h],
             ['Conversaciones Bot', stats.botConversations],
             ['Conversaciones Humanas', stats.humanConversations],
             ['Conversaciones Activas', stats.activeConversations],
             ['Conversaciones Cerradas', stats.closedConversations],
-            ['Tasa de Escalamiento (%)', stats.escalationRate.toFixed(2)],
-            ['Tasa de Resolución Bot (%)', stats.botResolutionRate.toFixed(2)],
+            ['Tasa de Escalamiento (%)', (stats.escalationRate || 0).toFixed(2)],
+            ['Tasa de Resolución Bot (%)', (stats.botResolutionRate || 0).toFixed(2)],
         ].map(row => row.join(',')).join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -387,7 +387,7 @@ export const Statistics: React.FC = () => {
                             <Divider sx={{ mb: 3 }} />
                             <Box sx={{ textAlign: 'center', mb: 3 }}>
                                 <Typography variant="h2" fontWeight="bold" color={COLORS.bot}>
-                                    {stats.botResolutionRate.toFixed(1)}%
+                                    {(stats.botResolutionRate || 0).toFixed(1)}%
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Tasa de Resolución
