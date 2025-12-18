@@ -8,10 +8,10 @@ export interface GlobalStatistics {
     totalMessages: number;
     botConversations: number;
     humanConversations: number;
-    averageResponseTimeSeconds: number;
-    averageConversationDurationMinutes: number;
-    messagesLast24Hours: number;
-    conversationsLast24Hours: number;
+    averageResponseTime: number;
+    averageDuration: number;
+    messagesLast24h: number;
+    conversationsLast24h: number;
     escalationRate: number;
     botResolutionRate: number;
     peakHours: Array<{ hour: number; messageCount: number }>;
@@ -123,12 +123,11 @@ export class StatisticsService {
             closedConversations: parseInt(conversationsResult.rows[0].closed_conversations) || 0,
             botConversations: botConvs,
             humanConversations: humanConvs,
-            conversationsLast24Hours:
-                parseInt(conversationsResult.rows[0].conversations_last_24_hours) || 0,
+            conversationsLast24h: parseInt(conversationsResult.rows[0].conversations_last_24_hours) || 0,
             totalMessages: parseInt(messagesResult.rows[0].total_messages) || 0,
-            messagesLast24Hours: parseInt(messagesResult.rows[0].messages_last_24_hours) || 0,
-            averageResponseTimeSeconds: parseFloat(responseTimeResult.rows[0]?.avg_response_time) || 0,
-            averageConversationDurationMinutes: parseFloat(durationResult.rows[0]?.avg_duration) || 0,
+            messagesLast24h: parseInt(messagesResult.rows[0].messages_last_24_hours) || 0,
+            averageResponseTime: parseFloat(responseTimeResult.rows[0]?.avg_response_time) || 0,
+            averageDuration: parseFloat(durationResult.rows[0]?.avg_duration) || 0,
             escalationRate: Math.round(escalationRate * 100) / 100,
             botResolutionRate: Math.round(botResolutionRate * 100) / 100,
             peakHours: peakHoursResult.rows.map(row => ({

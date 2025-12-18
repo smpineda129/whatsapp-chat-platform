@@ -353,7 +353,7 @@ export const Statistics: React.FC = () => {
                             </Typography>
                             <Divider sx={{ mb: 2 }} />
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={stats.conversationsByDay.slice().reverse()}>
+                                <LineChart data={(stats.conversationsByDay || []).slice().reverse()}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                                     <XAxis
                                         dataKey="date"
@@ -498,7 +498,7 @@ export const Statistics: React.FC = () => {
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
                         <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={stats.peakHours}>
+                            <BarChart data={stats.peakHours || []}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                                 <XAxis
                                     dataKey="hour"

@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { MessageModel } from '../models/Message';
 import { ConversationModel } from '../models/Conversation';
 import { whatsappService } from '../services/whatsapp.service';
+import { emitNewMessage } from '../sockets/chat.socket';
 import Joi from 'joi';
 
 const router = Router();
@@ -101,6 +102,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
             media_url: value.media_url,
             whatsapp_message_id: whatsappMessageId,
         });
+
+        // Emit new message via WebSocket for real-time updates
+        const io = (global as any).io;
+        if (io) {
+            console.log('Emitting agent message:', message.id);
+            emitNewMessage(io, message);
+        }
 
         res.status(201).json({ message });
     } catch (error) {
