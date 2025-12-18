@@ -94,7 +94,8 @@ export const Statistics: React.FC = () => {
     const fetchStatistics = async () => {
         try {
             const response = await api.get('/statistics/overview');
-            setStats(response.data);
+            console.log('Statistics response:', response.data);
+            setStats(response.data.statistics);
         } catch (error) {
             console.error('Failed to fetch statistics:', error);
         } finally {
