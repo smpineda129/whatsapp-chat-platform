@@ -80,11 +80,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     },
 
     addMessage: (message) => {
-        set((state) => ({
-            messages: [...state.messages, message],
-        }));
+        const state = get();
+        
+        // Only add message to messages array if it's for the selected conversation
+        if (state.selectedConversation?.id === message.conversation_id) {
+            set((state) => ({
+                messages: [...state.messages, message],
+            }));
+        }
 
-        // Update conversation's last message
+        // Always update conversation's last message
         set((state) => ({
             conversations: state.conversations.map((conv) =>
                 conv.id === message.conversation_id

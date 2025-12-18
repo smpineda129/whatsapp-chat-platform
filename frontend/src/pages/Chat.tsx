@@ -87,16 +87,24 @@ export const Chat: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isSwitchingMode, setIsSwitchingMode] = useState(false);
     const [isClosingChat, setIsClosingChat] = useState(false);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        // Connect to WebSocket
+        if (user) {
+            socketService.connect(user.id, user.role);
+        }
+
         fetchConversations();
 
         // Socket event listeners
         socketService.onNewMessage((message) => {
+            console.log('New message received:', message);
             addMessage(message);
         });
 
         socketService.onConversationUpdate((conversation) => {
+            console.log('Conversation updated:', conversation);
             updateConversation(conversation);
         });
 
@@ -113,8 +121,14 @@ export const Chat: React.FC = () => {
             socketService.removeListener('conversation_updated');
             socketService.removeListener('user_typing');
             socketService.removeListener('user_stop_typing');
+            socketService.disconnect();
         };
-    }, []);
+    }, [user]);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSendMessage = async () => {
         if (!messageInput.trim() || !selectedConversation) return;
@@ -283,7 +297,7 @@ export const Chat: React.FC = () => {
 
                     <ChatIcon sx={{ mr: 2 }} />
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        WhatsApp Platform
+                        Asistencia Brilla
                     </Typography>
 
                     <IconButton color="inherit" onClick={() => navigate('/statistics')} title="Estadísticas">
@@ -454,6 +468,7 @@ export const Chat: React.FC = () => {
                                     </Paper>
                                 </Box>
                             )}
+                            <div ref={messagesEndRef} />
                         </Box>
 
                         <Paper sx={{ p: 2 }} elevation={3}>

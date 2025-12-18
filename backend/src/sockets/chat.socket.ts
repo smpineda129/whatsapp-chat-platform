@@ -68,7 +68,11 @@ export const setupSocketHandlers = (io: Server) => {
 
 // Helper function to emit new message to conversation room
 export const emitNewMessage = (io: Server, message: any) => {
+    console.log('Emitting new message:', message.id, 'to conversation:', message.conversation_id);
+    // Emit to conversation room (for users currently viewing the conversation)
     io.to(`conversation:${message.conversation_id}`).emit('new_message', message);
+    // Also emit to all connected users (for notification purposes)
+    io.emit('new_message', message);
 };
 
 // Helper function to emit conversation update

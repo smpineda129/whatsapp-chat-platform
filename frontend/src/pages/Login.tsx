@@ -47,9 +47,9 @@ export const Login: React.FC = () => {
                 }}
             >
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <WhatsApp sx={{ fontSize: 60, color: '#25d366', mb: 2 }} />
+                    <WhatsApp sx={{ fontSize: 60, color: '#E31E24', mb: 2 }} />
                     <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-                        WhatsApp Chat Platform
+                        Asistencia Brilla
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
                         Inicia sesión para gestionar conversaciones
@@ -109,8 +109,8 @@ export const Login: React.FC = () => {
                                 sx={{
                                     mt: 3,
                                     mb: 2,
-                                    bgcolor: '#25d366',
-                                    '&:hover': { bgcolor: '#128c7e' },
+                                    bgcolor: '#E31E24',
+                                    '&:hover': { bgcolor: '#B71C1C' },
                                 }}
                             >
                                 {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}

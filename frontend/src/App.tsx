@@ -11,11 +11,11 @@ import { useAuthStore } from './store/authStore';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#25d366',
-      dark: '#128c7e',
+      main: '#E31E24',
+      dark: '#B71C1C',
     },
     secondary: {
-      main: '#075e54',
+      main: '#FDB913',
     },
   },
   typography: {

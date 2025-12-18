@@ -17,7 +17,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import api from '../services/api';
 import type { GlobalStatistics, AgentStatistics } from '../types';
 
-const COLORS = ['#25d366', '#128c7e', '#075e54', '#34b7f1'];
+const COLORS = ['#E31E24', '#FDB913', '#B71C1C', '#FF5722'];
 
 export const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<GlobalStatistics | null>(null);
@@ -60,7 +60,7 @@ export const Dashboard: React.FC = () => {
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <ChatIcon sx={{ mr: 1, color: '#25d366' }} />
+                                <ChatIcon sx={{ mr: 1, color: '#E31E24' }} />
                                 <Typography color="text.secondary" variant="body2">
                                     Conversaciones Totales
                                 </Typography>
