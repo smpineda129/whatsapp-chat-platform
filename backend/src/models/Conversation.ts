@@ -78,6 +78,23 @@ export class ConversationModel {
                     status: 'closed',
                     ended_at: new Date(),
                 });
+                
+                // Send automatic closure message via WhatsApp
+                try {
+                    const { whatsappService } = await import('../services/whatsapp.service');
+                    const contactQuery = await db.query('SELECT phone_number FROM contacts WHERE id = $1', [contactId]);
+                    const contactPhone = contactQuery.rows[0]?.phone_number;
+                    
+                    if (contactPhone) {
+                        await whatsappService.sendTextMessage({
+                            to: contactPhone,
+                            message: '⏰ Esta conversación ha sido cerrada automáticamente por inactividad. Si necesitas ayuda, envía un nuevo mensaje para iniciar una nueva conversación.',
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error sending auto-close message:', error);
+                }
+                
                 // Create new conversation
                 return this.create({ contact_id: contactId, chat_type: 'bot' });
             }

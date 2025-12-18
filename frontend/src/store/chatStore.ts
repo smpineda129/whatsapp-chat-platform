@@ -72,7 +72,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     sendMessage: async (data) => {
         try {
             const response = await api.post('/messages', data);
-            // Message will be added via socket event
+            const newMessage = response.data.message;
+            
+            // Add message immediately (optimistic update)
+            const state = get();
+            if (state.selectedConversation?.id === newMessage.conversation_id) {
+                set((state) => ({
+                    messages: [...state.messages, newMessage],
+                }));
+            }
         } catch (error) {
             console.error('Failed to send message:', error);
             throw error;
@@ -84,9 +92,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         
         // Only add message to messages array if it's for the selected conversation
         if (state.selectedConversation?.id === message.conversation_id) {
-            set((state) => ({
-                messages: [...state.messages, message],
-            }));
+            // Check if message already exists to prevent duplicates
+            const messageExists = state.messages.some(m => m.id === message.id);
+            if (!messageExists) {
+                set((state) => ({
+                    messages: [...state.messages, message],
+                }));
+            }
         }
 
         // Always update conversation's last message

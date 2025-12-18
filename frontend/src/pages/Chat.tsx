@@ -18,6 +18,7 @@ import {
     Menu,
     MenuItem,
     Divider,
+    Badge,
     Paper,
 } from '@mui/material';
 import {
@@ -88,6 +89,25 @@ export const Chat: React.FC = () => {
     const [isClosingChat, setIsClosingChat] = useState(false);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
+    // Notification sound function
+    const playNotificationSound = () => {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    };
+
     useEffect(() => {
         // Connect to WebSocket
         if (user) {
@@ -100,6 +120,11 @@ export const Chat: React.FC = () => {
         socketService.onNewMessage((message) => {
             console.log('New message received:', message);
             addMessage(message);
+            
+            // Play sound if message is from customer (not from agent)
+            if (message.sender_type !== 'agent') {
+                playNotificationSound();
+            }
         });
 
         socketService.onConversationUpdate((conversation) => {
@@ -253,9 +278,15 @@ export const Chat: React.FC = () => {
                             onClick={() => selectConversation(conv)}
                         >
                             <ListItemIcon>
-                                <Avatar sx={{ bgcolor: avatarColor }}>
-                                    {initials}
-                                </Avatar>
+                                <Badge 
+                                    badgeContent={conv.status === 'active' && conv.chat_type === 'human' ? '!' : 0}
+                                    color="error"
+                                    overlap="circular"
+                                >
+                                    <Avatar sx={{ bgcolor: avatarColor }}>
+                                        {initials}
+                                    </Avatar>
+                                </Badge>
                             </ListItemIcon>
                             <ListItemText
                                 primary={
