@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import {
     Chat as ChatIcon,
-    Dashboard as DashboardIcon,
     Search,
     Send,
     SmartToy,
@@ -303,12 +302,6 @@ export const Chat: React.FC = () => {
                     <IconButton color="inherit" onClick={() => navigate('/statistics')} title="Estadísticas">
                         <BarChartIcon />
                     </IconButton>
-
-                    {user?.role === 'admin' && (
-                        <IconButton color="inherit" onClick={() => navigate('/dashboard')} title="Dashboard">
-                            <DashboardIcon />
-                        </IconButton>
-                    )}
 
                     <IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)}>
                         <Avatar sx={{ width: 32, height: 32 }}>{user?.full_name[0]}</Avatar>

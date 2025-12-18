@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { Login } from './pages/Login';
 import { Chat } from './pages/Chat';
-import { Dashboard } from './pages/Dashboard';
 import { Statistics } from './pages/Statistics';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
@@ -35,14 +34,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Chat />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute requireAdmin>
-                <Dashboard />
               </ProtectedRoute>
             }
           />
