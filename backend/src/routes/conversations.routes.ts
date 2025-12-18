@@ -119,4 +119,29 @@ router.post('/:id/transfer', authenticate, async (req: AuthRequest, res: Respons
     }
 });
 
+// Transfer conversation back to bot
+router.post('/:id/transfer-to-bot', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const conversationId = parseInt(req.params.id);
+
+        const conversation = await ConversationModel.update(conversationId, {
+            chat_type: 'bot',
+            assigned_to_user_id: null,
+        });
+
+        if (!conversation) {
+            res.status(404).json({ error: 'Conversation not found' });
+            return;
+        }
+
+        res.json({
+            conversation,
+            message: 'Conversation transferred back to bot'
+        });
+    } catch (error) {
+        console.error('Transfer to bot error:', error);
+        res.status(500).json({ error: 'Failed to transfer conversation to bot' });
+    }
+});
+
 export default router;

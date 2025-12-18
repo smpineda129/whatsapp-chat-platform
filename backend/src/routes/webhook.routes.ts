@@ -124,8 +124,11 @@ async function processWebhook(body: any): Promise<void> {
                 await ConversationModel.update(conversation.id, {
                     chat_type: 'human',
                 });
+                console.log('✅ Chat transferred to human attention');
+            } else {
+                console.log('💬 Message saved for human agent (chat already in human mode)');
             }
-            console.log('Message requires human attention');
+            // Message is saved, but no auto-response. Human agent will respond manually.
             return;
         }
 
@@ -152,6 +155,14 @@ async function processWebhook(body: any): Promise<void> {
             await ConversationModel.update(conversation.id, {
                 chat_type: 'human',
             });
+            console.log('🔄 Bot requested human transfer');
+        }
+
+        // Validate bot response before sending
+        if (!botResponse.response || botResponse.response.trim() === '') {
+            console.error('⚠️ Bot returned empty response, skipping WhatsApp send');
+            console.log('Bot response data:', JSON.stringify(botResponse, null, 2));
+            return;
         }
 
         // Send bot response via WhatsApp

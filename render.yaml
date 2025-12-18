@@ -72,6 +72,8 @@ services:
         sync: false
       - key: WHATSAPP_WEBHOOK_VERIFY_TOKEN
         sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
       - key: N8N_WEBHOOK_URL
         sync: false
       - key: FRONTEND_URL
