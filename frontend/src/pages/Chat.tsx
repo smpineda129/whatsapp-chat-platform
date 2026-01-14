@@ -20,6 +20,9 @@ import {
     Divider,
     Badge,
     Paper,
+    Select,
+    FormControl,
+    InputLabel,
 } from '@mui/material';
 import {
     Chat as ChatIcon,
@@ -87,6 +90,7 @@ export const Chat: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isSwitchingMode, setIsSwitchingMode] = useState(false);
     const [isClosingChat, setIsClosingChat] = useState(false);
+    const [isSwitchingNumber, setIsSwitchingNumber] = useState(false);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     // Notification sound function
@@ -231,6 +235,31 @@ export const Chat: React.FC = () => {
             alert('Error al finalizar el chat. Intenta de nuevo.');
         } finally {
             setIsClosingChat(false);
+        }
+    };
+
+    const handleSwitchWhatsAppNumber = async (numberType: 'bot' | 'human') => {
+        if (!selectedConversation) return;
+        
+        setIsSwitchingNumber(true);
+        try {
+            await api.post(`/conversations/${selectedConversation.id}/switch-number`, {
+                whatsapp_number_type: numberType,
+            });
+            
+            // Update local state
+            const updatedConversation = {
+                ...selectedConversation,
+                whatsapp_number_type: numberType,
+            };
+            
+            updateConversation(updatedConversation as any);
+            selectConversation(updatedConversation as any);
+        } catch (error) {
+            console.error('Failed to switch WhatsApp number:', error);
+            alert('Error al cambiar el número de WhatsApp. Intenta de nuevo.');
+        } finally {
+            setIsSwitchingNumber(false);
         }
     };
 
@@ -398,7 +427,7 @@ export const Chat: React.FC = () => {
 
                 {selectedConversation ? (
                     <>
-                        {/* Bot Mode Toggle */}
+                        {/* Bot Mode Toggle and WhatsApp Number Selector */}
                         <Paper
                             elevation={1}
                             sx={{
@@ -421,6 +450,28 @@ export const Chat: React.FC = () => {
                                 />
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <FormControl size="small" sx={{ minWidth: 180 }}>
+                                    <InputLabel>Número WhatsApp</InputLabel>
+                                    <Select
+                                        value={selectedConversation.whatsapp_number_type}
+                                        label="Número WhatsApp"
+                                        onChange={(e) => handleSwitchWhatsAppNumber(e.target.value as 'bot' | 'human')}
+                                        disabled={isSwitchingNumber}
+                                    >
+                                        <MenuItem value="bot">
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <SmartToy fontSize="small" />
+                                                <Typography>Bot (Automático)</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                        <MenuItem value="human">
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Person fontSize="small" />
+                                                <Typography>Humano (100%)</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    </Select>
+                                </FormControl>
                                 <FormControlLabel
                                     control={
                                         <Switch

@@ -34,6 +34,7 @@ export interface Contact {
 // Conversation types
 export type ConversationStatus = 'active' | 'closed' | 'archived';
 export type ChatType = 'bot' | 'human';
+export type WhatsAppNumberType = 'bot' | 'human';
 
 export interface Conversation {
     id: number;
@@ -41,6 +42,7 @@ export interface Conversation {
     assigned_to_user_id: number | null;
     status: ConversationStatus;
     chat_type: ChatType;
+    whatsapp_number_type: WhatsAppNumberType;
     started_at: string;
     ended_at: string | null;
     first_response_at: string | null;
