@@ -220,6 +220,27 @@ export class WhatsAppService {
         }
     }
 
+    parseReceivingPhoneNumberId(body: any): string | null {
+        try {
+            const entry = body.entry?.[0];
+            const change = entry?.changes?.[0];
+            const value = change?.value;
+            const phoneNumberId = value?.metadata?.phone_number_id;
+
+            return phoneNumberId || null;
+        } catch (error) {
+            console.error('Error parsing receiving phone number ID:', error);
+            return null;
+        }
+    }
+
+    determineNumberType(receivingPhoneNumberId: string): 'bot' | 'human' {
+        if (receivingPhoneNumberId === this.humanPhoneNumberId) {
+            return 'human';
+        }
+        return 'bot';
+    }
+
     parseStatusUpdate(body: any): { messageId: string; status: string } | null {
         try {
             const entry = body.entry?.[0];

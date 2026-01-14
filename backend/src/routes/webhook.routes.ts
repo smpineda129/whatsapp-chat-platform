@@ -70,6 +70,14 @@ async function processWebhook(body: any): Promise<void> {
 
         console.log('✅ Received WhatsApp message:', message);
 
+        // Detect which WhatsApp number received the message
+        const receivingPhoneNumberId = whatsappService.parseReceivingPhoneNumberId(body);
+        const whatsappNumberType = receivingPhoneNumberId 
+            ? whatsappService.determineNumberType(receivingPhoneNumberId)
+            : 'bot';
+        
+        console.log(`📞 Message received on ${whatsappNumberType} number (${receivingPhoneNumberId})`);
+
         // Extract contact info from webhook
         const contactInfo = whatsappService.parseContactInfo(body);
         
@@ -86,8 +94,8 @@ async function processWebhook(body: any): Promise<void> {
             }) || contact;
         }
 
-        // Find or create active conversation
-        const conversation = await ConversationModel.findOrCreate(contact.id);
+        // Find or create active conversation for this specific WhatsApp number
+        const conversation = await ConversationModel.findOrCreate(contact.id, whatsappNumberType);
 
         // Extract message content
         let messageContent = '';

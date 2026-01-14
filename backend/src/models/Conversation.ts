@@ -57,19 +57,28 @@ export class ConversationModel {
         return result.rows[0] || null;
     }
 
-    static async findActiveByContact(contactId: number): Promise<Conversation | null> {
-        const query = `
+    static async findActiveByContact(contactId: number, whatsappNumberType?: WhatsAppNumberType): Promise<Conversation | null> {
+        let query = `
       SELECT * FROM conversations
       WHERE contact_id = $1 AND status = 'active'
+    `;
+        const params: any[] = [contactId];
+        
+        if (whatsappNumberType) {
+            query += ` AND whatsapp_number_type = $2`;
+            params.push(whatsappNumberType);
+        }
+        
+        query += `
       ORDER BY started_at DESC
       LIMIT 1
     `;
-        const result = await db.query<Conversation>(query, [contactId]);
+        const result = await db.query<Conversation>(query, params);
         return result.rows[0] || null;
     }
 
-    static async findOrCreate(contactId: number): Promise<Conversation> {
-        const existing = await this.findActiveByContact(contactId);
+    static async findOrCreate(contactId: number, whatsappNumberType: WhatsAppNumberType = 'bot'): Promise<Conversation> {
+        const existing = await this.findActiveByContact(contactId, whatsappNumberType);
         
         // Check if conversation exists and is still active (within 30 minutes)
         if (existing) {
@@ -100,13 +109,21 @@ export class ConversationModel {
                 }
                 
                 // Create new conversation
-                return this.create({ contact_id: contactId, chat_type: 'bot' });
+                return this.create({ 
+                    contact_id: contactId, 
+                    chat_type: 'bot',
+                    whatsapp_number_type: whatsappNumberType 
+                });
             }
             
             return existing;
         }
         
-        return this.create({ contact_id: contactId, chat_type: 'bot' });
+        return this.create({ 
+            contact_id: contactId, 
+            chat_type: 'bot',
+            whatsapp_number_type: whatsappNumberType 
+        });
     }
 
     static async closeConversation(id: number): Promise<Conversation | null> {
@@ -161,6 +178,7 @@ export class ConversationModel {
         filters?: {
             status?: ConversationStatus;
             chat_type?: ChatType;
+            whatsapp_number_type?: WhatsAppNumberType;
             assigned_to_user_id?: number;
         },
         limit = 50,
@@ -177,6 +195,10 @@ export class ConversationModel {
         if (filters?.chat_type) {
             conditions.push(`c.chat_type = $${paramCount++}`);
             values.push(filters.chat_type);
+        }
+        if (filters?.whatsapp_number_type) {
+            conditions.push(`c.whatsapp_number_type = $${paramCount++}`);
+            values.push(filters.whatsapp_number_type);
         }
         if (filters?.assigned_to_user_id !== undefined) {
             if (filters.assigned_to_user_id === null) {

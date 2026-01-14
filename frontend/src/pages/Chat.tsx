@@ -20,9 +20,8 @@ import {
     Divider,
     Badge,
     Paper,
-    Select,
-    FormControl,
-    InputLabel,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     Chat as ChatIcon,
@@ -90,7 +89,7 @@ export const Chat: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isSwitchingMode, setIsSwitchingMode] = useState(false);
     const [isClosingChat, setIsClosingChat] = useState(false);
-    const [isSwitchingNumber, setIsSwitchingNumber] = useState(false);
+    const [whatsappNumberFilter, setWhatsappNumberFilter] = useState<'all' | 'bot' | 'human'>('all');
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     // Notification sound function
@@ -238,35 +237,15 @@ export const Chat: React.FC = () => {
         }
     };
 
-    const handleSwitchWhatsAppNumber = async (numberType: 'bot' | 'human') => {
-        if (!selectedConversation) return;
+    const filteredConversations = conversations.filter(conv => {
+        const matchesSearch = conv.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            conv.contact_phone.includes(searchQuery);
         
-        setIsSwitchingNumber(true);
-        try {
-            await api.post(`/conversations/${selectedConversation.id}/switch-number`, {
-                whatsapp_number_type: numberType,
-            });
-            
-            // Update local state
-            const updatedConversation = {
-                ...selectedConversation,
-                whatsapp_number_type: numberType,
-            };
-            
-            updateConversation(updatedConversation as any);
-            selectConversation(updatedConversation as any);
-        } catch (error) {
-            console.error('Failed to switch WhatsApp number:', error);
-            alert('Error al cambiar el número de WhatsApp. Intenta de nuevo.');
-        } finally {
-            setIsSwitchingNumber(false);
-        }
-    };
-
-    const filteredConversations = conversations.filter((conv) =>
-        conv.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conv.contact_phone.includes(searchQuery)
-    );
+        const matchesNumberFilter = whatsappNumberFilter === 'all' || 
+            conv.whatsapp_number_type === whatsappNumberFilter;
+        
+        return matchesSearch && matchesNumberFilter;
+    });
 
     const drawer = (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -293,6 +272,32 @@ export const Chat: React.FC = () => {
                     }}
                 />
             </Box>
+
+            <Tabs
+                value={whatsappNumberFilter}
+                onChange={(_, newValue) => setWhatsappNumberFilter(newValue)}
+                variant="fullWidth"
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+                <Tab 
+                    label="Todos" 
+                    value="all"
+                    icon={<ChatIcon fontSize="small" />}
+                    iconPosition="start"
+                />
+                <Tab 
+                    label="Bot" 
+                    value="bot"
+                    icon={<SmartToy fontSize="small" />}
+                    iconPosition="start"
+                />
+                <Tab 
+                    label="Humano" 
+                    value="human"
+                    icon={<Person fontSize="small" />}
+                    iconPosition="start"
+                />
+            </Tabs>
 
             <List sx={{ flex: 1, overflow: 'auto' }}>
                 {filteredConversations.map((conv) => {
@@ -450,28 +455,13 @@ export const Chat: React.FC = () => {
                                 />
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <FormControl size="small" sx={{ minWidth: 180 }}>
-                                    <InputLabel>Número WhatsApp</InputLabel>
-                                    <Select
-                                        value={selectedConversation.whatsapp_number_type}
-                                        label="Número WhatsApp"
-                                        onChange={(e) => handleSwitchWhatsAppNumber(e.target.value as 'bot' | 'human')}
-                                        disabled={isSwitchingNumber}
-                                    >
-                                        <MenuItem value="bot">
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <SmartToy fontSize="small" />
-                                                <Typography>Bot (Automático)</Typography>
-                                            </Box>
-                                        </MenuItem>
-                                        <MenuItem value="human">
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Person fontSize="small" />
-                                                <Typography>Humano (100%)</Typography>
-                                            </Box>
-                                        </MenuItem>
-                                    </Select>
-                                </FormControl>
+                                <Chip
+                                    size="small"
+                                    icon={selectedConversation.whatsapp_number_type === 'bot' ? <SmartToy fontSize="small" /> : <Person fontSize="small" />}
+                                    label={selectedConversation.whatsapp_number_type === 'bot' ? 'Número Bot' : 'Número Humano'}
+                                    color={selectedConversation.whatsapp_number_type === 'bot' ? 'info' : 'success'}
+                                    variant="outlined"
+                                />
                                 <FormControlLabel
                                     control={
                                         <Switch

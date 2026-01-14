@@ -22,7 +22,7 @@ const switchNumberSchema = Joi.object({
 // Get all conversations
 router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { status, chat_type, assigned_to_me, limit = '50', offset = '0' } = req.query;
+        const { status, chat_type, whatsapp_number_type, assigned_to_me, limit = '50', offset = '0' } = req.query;
 
         const filters: any = {};
 
@@ -31,6 +31,9 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
         }
         if (chat_type) {
             filters.chat_type = chat_type as string;
+        }
+        if (whatsapp_number_type) {
+            filters.whatsapp_number_type = whatsapp_number_type as string;
         }
         if (assigned_to_me === 'true' && req.user) {
             filters.assigned_to_user_id = req.user.id;
