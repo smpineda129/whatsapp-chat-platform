@@ -10,6 +10,7 @@ interface EnvConfig {
     jwtExpiresIn: string;
     whatsappApiToken: string;
     whatsappPhoneNumberId: string;
+    whatsappHumanPhoneNumberId: string;
     whatsappWebhookVerifyToken: string;
     facebookAppSecret: string;
     n8nWebhookUrl: string;
@@ -44,6 +45,8 @@ const buildDatabaseUrlFromParts = (): string | undefined => {
     return `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${encodeURIComponent(database)}`;
 };
 
+const whatsappPhoneNumberId = getEnvVar('WHATSAPP_PHONE_NUMBER_ID', '');
+
 export const env: EnvConfig = {
     port: parseInt(getEnvVar('PORT', '3000'), 10),
     nodeEnv: getEnvVar('NODE_ENV', 'development'),
@@ -51,7 +54,8 @@ export const env: EnvConfig = {
     jwtSecret: getEnvVar('JWT_SECRET'),
     jwtExpiresIn: getEnvVar('JWT_EXPIRES_IN', '7d'),
     whatsappApiToken: getEnvVar('WHATSAPP_API_TOKEN', ''),
-    whatsappPhoneNumberId: getEnvVar('WHATSAPP_PHONE_NUMBER_ID', ''),
+    whatsappPhoneNumberId: whatsappPhoneNumberId,
+    whatsappHumanPhoneNumberId: getOptionalEnvVar('WHATSAPP_HUMAN_PHONE_NUMBER_ID') || whatsappPhoneNumberId,
     whatsappWebhookVerifyToken: getEnvVar('WHATSAPP_WEBHOOK_VERIFY_TOKEN', ''),
     facebookAppSecret: getEnvVar('FACEBOOK_APP_SECRET', ''),
     n8nWebhookUrl: getEnvVar('N8N_WEBHOOK_URL', ''),

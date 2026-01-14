@@ -2,6 +2,7 @@ import { db } from '../config/database';
 
 export type ConversationStatus = 'active' | 'closed' | 'archived';
 export type ChatType = 'bot' | 'human';
+export type WhatsAppNumberType = 'bot' | 'human';
 
 export interface Conversation {
     id: number;
@@ -9,6 +10,7 @@ export interface Conversation {
     assigned_to_user_id: number | null;
     status: ConversationStatus;
     chat_type: ChatType;
+    whatsapp_number_type: WhatsAppNumberType;
     started_at: Date;
     ended_at: Date | null;
     first_response_at: Date | null;
@@ -19,6 +21,7 @@ export interface Conversation {
 export interface CreateConversationData {
     contact_id: number;
     chat_type?: ChatType;
+    whatsapp_number_type?: WhatsAppNumberType;
     assigned_to_user_id?: number;
 }
 
@@ -33,14 +36,15 @@ export interface ConversationWithDetails extends Conversation {
 export class ConversationModel {
     static async create(data: CreateConversationData): Promise<Conversation> {
         const query = `
-      INSERT INTO conversations (contact_id, chat_type, assigned_to_user_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO conversations (contact_id, chat_type, whatsapp_number_type, assigned_to_user_id)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
         const result = await db.query<Conversation>(query, [
             data.contact_id,
             data.chat_type || 'bot',
+            data.whatsapp_number_type || 'bot',
             data.assigned_to_user_id || null,
         ]);
 
@@ -118,6 +122,7 @@ export class ConversationModel {
             assigned_to_user_id: number | null;
             status: ConversationStatus;
             chat_type: ChatType;
+            whatsapp_number_type: WhatsAppNumberType;
             ended_at: Date;
             first_response_at: Date;
             last_message_at: Date;

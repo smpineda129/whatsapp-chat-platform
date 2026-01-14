@@ -74,6 +74,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
                 whatsappMessageId = await whatsappService.sendTextMessage({
                     to: contactPhone,
                     message: value.content,
+                    numberType: conversation.whatsapp_number_type,
                 });
             } else if (value.media_url) {
                 whatsappMessageId = await whatsappService.sendMediaMessage({
@@ -81,6 +82,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
                     mediaUrl: value.media_url,
                     mediaType: value.message_type as any,
                     caption: value.content,
+                    numberType: conversation.whatsapp_number_type,
                 });
             } else {
                 res.status(400).json({ error: 'Media URL required for non-text messages' });

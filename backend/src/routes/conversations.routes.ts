@@ -15,6 +15,10 @@ const transferSchema = Joi.object({
     user_id: Joi.number().required(),
 });
 
+const switchNumberSchema = Joi.object({
+    whatsapp_number_type: Joi.string().valid('bot', 'human').required(),
+});
+
 // Get all conversations
 router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -163,6 +167,36 @@ router.post('/:id/close', authenticate, async (req: AuthRequest, res: Response):
     } catch (error) {
         console.error('Close conversation error:', error);
         res.status(500).json({ error: 'Failed to close conversation' });
+    }
+});
+
+// Switch WhatsApp number type (bot or human)
+router.post('/:id/switch-number', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const conversationId = parseInt(req.params.id);
+
+        const { error, value } = switchNumberSchema.validate(req.body);
+        if (error) {
+            res.status(400).json({ error: error.details[0].message });
+            return;
+        }
+
+        const conversation = await ConversationModel.update(conversationId, {
+            whatsapp_number_type: value.whatsapp_number_type,
+        });
+
+        if (!conversation) {
+            res.status(404).json({ error: 'Conversation not found' });
+            return;
+        }
+
+        res.json({
+            conversation,
+            message: `WhatsApp number switched to ${value.whatsapp_number_type} successfully`
+        });
+    } catch (error) {
+        console.error('Switch number error:', error);
+        res.status(500).json({ error: 'Failed to switch WhatsApp number' });
     }
 });
 

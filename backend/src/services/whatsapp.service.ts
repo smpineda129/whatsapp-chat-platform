@@ -8,6 +8,7 @@ export interface SendMessageParams {
     to: string;
     message: string;
     messageType?: 'text';
+    numberType?: 'bot' | 'human';
 }
 
 export interface SendMediaParams {
@@ -15,6 +16,7 @@ export interface SendMediaParams {
     mediaUrl: string;
     mediaType: 'image' | 'document' | 'audio' | 'video';
     caption?: string;
+    numberType?: 'bot' | 'human';
 }
 
 export interface WhatsAppMessage {
@@ -40,15 +42,21 @@ export interface WhatsAppMessage {
 
 export class WhatsAppService {
     private apiUrl: string;
-    private phoneNumberId: string;
+    private botPhoneNumberId: string;
+    private humanPhoneNumberId: string;
     private accessToken: string;
     private appSecret: string;
 
     constructor() {
         this.apiUrl = WHATSAPP_API_URL;
-        this.phoneNumberId = env.whatsappPhoneNumberId;
+        this.botPhoneNumberId = env.whatsappPhoneNumberId;
+        this.humanPhoneNumberId = env.whatsappHumanPhoneNumberId;
         this.accessToken = env.whatsappApiToken;
         this.appSecret = env.facebookAppSecret;
+    }
+
+    private getPhoneNumberId(numberType: 'bot' | 'human' = 'bot'): string {
+        return numberType === 'human' ? this.humanPhoneNumberId : this.botPhoneNumberId;
     }
 
     private generateAppSecretProof(): string {
@@ -63,6 +71,7 @@ export class WhatsAppService {
 
     async sendTextMessage(params: SendMessageParams): Promise<string> {
         try {
+            const phoneNumberId = this.getPhoneNumberId(params.numberType || 'bot');
             const appsecretProof = this.generateAppSecretProof();
             const headers: any = {
                 'Authorization': `Bearer ${this.accessToken}`,
@@ -74,7 +83,7 @@ export class WhatsAppService {
             }
 
             const response = await axios.post(
-                `${this.apiUrl}/${this.phoneNumberId}/messages`,
+                `${this.apiUrl}/${phoneNumberId}/messages`,
                 {
                     messaging_product: 'whatsapp',
                     recipient_type: 'individual',
@@ -97,6 +106,7 @@ export class WhatsAppService {
 
     async sendMediaMessage(params: SendMediaParams): Promise<string> {
         try {
+            const phoneNumberId = this.getPhoneNumberId(params.numberType || 'bot');
             const appsecretProof = this.generateAppSecretProof();
             const headers: any = {
                 'Authorization': `Bearer ${this.accessToken}`,
@@ -116,7 +126,7 @@ export class WhatsAppService {
             }
 
             const response = await axios.post(
-                `${this.apiUrl}/${this.phoneNumberId}/messages`,
+                `${this.apiUrl}/${phoneNumberId}/messages`,
                 {
                     messaging_product: 'whatsapp',
                     recipient_type: 'individual',
@@ -134,8 +144,9 @@ export class WhatsAppService {
         }
     }
 
-    async markAsRead(messageId: string): Promise<void> {
+    async markAsRead(messageId: string, numberType: 'bot' | 'human' = 'bot'): Promise<void> {
         try {
+            const phoneNumberId = this.getPhoneNumberId(numberType);
             const appsecretProof = this.generateAppSecretProof();
             const headers: any = {
                 'Authorization': `Bearer ${this.accessToken}`,
@@ -147,7 +158,7 @@ export class WhatsAppService {
             }
 
             await axios.post(
-                `${this.apiUrl}/${this.phoneNumberId}/messages`,
+                `${this.apiUrl}/${phoneNumberId}/messages`,
                 {
                     messaging_product: 'whatsapp',
                     status: 'read',
@@ -243,7 +254,7 @@ export class WhatsAppService {
 
             // Get contact profile
             const response = await axios.get(
-                `${this.apiUrl}/${this.phoneNumberId}/contacts`,
+                `${this.apiUrl}/${this.botPhoneNumberId}/contacts`,
                 {
                     headers,
                     params: {

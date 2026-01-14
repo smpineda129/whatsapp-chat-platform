@@ -7,9 +7,10 @@ class Database {
     constructor() {
         this.pool = new Pool({
             connectionString: env.databaseUrl,
-            max: 20,
+            max: 10,
+            min: 0,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            connectionTimeoutMillis: 10000,
             ssl: {
                 rejectUnauthorized: false
             }
@@ -17,7 +18,14 @@ class Database {
 
         this.pool.on('error', (err) => {
             console.error('Unexpected error on idle client', err);
-            process.exit(-1);
+        });
+
+        this.pool.on('connect', () => {
+            console.log('✅ Database connection established');
+        });
+
+        this.pool.on('remove', () => {
+            console.log('Database client removed from pool');
         });
     }
 

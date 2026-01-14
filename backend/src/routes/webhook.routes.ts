@@ -175,6 +175,7 @@ Por favor, responde con el número de la opción o describe tu consulta.`;
             const whatsappMessageId = await whatsappService.sendTextMessage({
                 to: contact.phone_number,
                 message: welcomeMessage,
+                numberType: conversation.whatsapp_number_type,
             });
 
             // Save welcome message
@@ -230,6 +231,7 @@ Por favor, responde con el número de la opción o describe tu consulta.`;
         const whatsappMessageId = await whatsappService.sendTextMessage({
             to: contact.phone_number,
             message: botResponse.response,
+            numberType: conversation.whatsapp_number_type,
         });
 
         // Save bot response
